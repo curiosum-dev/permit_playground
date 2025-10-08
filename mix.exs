@@ -10,7 +10,7 @@ defmodule PermitPlayground.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
+      compilers: [:contexted, :phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -65,7 +65,11 @@ defmodule PermitPlayground.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:contexted, "~> 0.3.4"},
+      {:permit, "~> 0.3.0"},
+      {:permit_ecto, "~> 0.2.4"},
+      {:permit_phoenix, "~> 0.3.0"}
     ]
   end
 

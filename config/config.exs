@@ -22,6 +22,12 @@ config :permit_playground, PermitPlaygroundWeb.Endpoint,
   pubsub_server: PermitPlayground.PubSub,
   live_view: [signing_salt: "QJVIhoCu"]
 
+# Contexted
+config :contexted,
+  contexts: [
+    PermitPlayground.RBAC
+  ]
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails
