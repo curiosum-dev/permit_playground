@@ -8,6 +8,7 @@ defmodule PermitPlaygroundWeb.RBACLive do
   alias PermitPlayground.RBAC.Action
   alias PermitPlayground.RBAC.Resource
   alias PermitPlayground.RBAC.ResourceAttribute
+  alias PermitPlayground.PermitGenerator
 
   @impl true
   def mount(_params, _session, socket) do
@@ -48,21 +49,26 @@ defmodule PermitPlaygroundWeb.RBACLive do
     action = RBAC.get_action!(action_id)
     resource = RBAC.get_resource!(resource_id, [:resource_attributes])
 
+    selected_conditions = if(existing_permission, do: existing_permission.conditions, else: %{})
+
+    permission_context = %{
+      role_id: role_id,
+      action_id: action_id,
+      resource_id: resource_id,
+      role: role,
+      action: action,
+      resource: resource,
+      existing_permission: existing_permission
+    }
+
     socket =
       socket
       |> show_modal(:condition)
-      |> assign(:selected_permission_context, %{
-        role_id: role_id,
-        action_id: action_id,
-        resource_id: resource_id,
-        role: role,
-        action: action,
-        resource: resource,
-        existing_permission: existing_permission
-      })
+      |> assign(:selected_permission_context, permission_context)
+      |> assign(:selected_conditions, selected_conditions)
       |> assign(
-        :selected_conditions,
-        if(existing_permission, do: existing_permission.conditions, else: %{})
+        :can_function_preview,
+        PermitGenerator.generate_can_function_preview(role, action, resource, selected_conditions)
       )
 
     {:noreply, socket}
@@ -372,7 +378,20 @@ defmodule PermitPlaygroundWeb.RBACLive do
         Map.put(conditions, attribute, "")
       end
 
-    {:noreply, assign(socket, :selected_conditions, updated_conditions)}
+    ctx = socket.assigns.selected_permission_context
+
+    updated_preview =
+      PermitGenerator.generate_can_function_preview(
+        ctx.role,
+        ctx.action,
+        ctx.resource,
+        updated_conditions
+      )
+
+    {:noreply,
+     socket
+     |> assign(:selected_conditions, updated_conditions)
+     |> assign(:can_function_preview, updated_preview)}
   end
 
   @impl true
@@ -386,7 +405,20 @@ defmodule PermitPlaygroundWeb.RBACLive do
         Map.put(conditions, attribute, value)
       end
 
-    {:noreply, assign(socket, :selected_conditions, updated_conditions)}
+    ctx = socket.assigns.selected_permission_context
+
+    updated_preview =
+      PermitGenerator.generate_can_function_preview(
+        ctx.role,
+        ctx.action,
+        ctx.resource,
+        updated_conditions
+      )
+
+    {:noreply,
+     socket
+     |> assign(:selected_conditions, updated_conditions)
+     |> assign(:can_function_preview, updated_preview)}
   end
 
   @impl true

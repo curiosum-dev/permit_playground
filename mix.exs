@@ -69,7 +69,9 @@ defmodule PermitPlayground.MixProject do
       {:contexted, "~> 0.3.4"},
       {:permit, "~> 0.3.0"},
       {:permit_ecto, "~> 0.2.4"},
-      {:permit_phoenix, "~> 0.3.0"}
+      {:permit_phoenix, "~> 0.3.0"},
+      {:makeup, "~> 1.2"},
+      {:makeup_elixir, "~> 1.0"}
     ]
   end
 

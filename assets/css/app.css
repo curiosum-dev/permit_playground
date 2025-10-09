@@ -102,4 +102,20 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+.highlight .k { color: #D16200; font-weight: bold; } /* keyword */
+.highlight .kd { color: #D16200; font-weight: bold; } /* keyword declaration */
+.highlight .nc { color: #FFA657; } /* name class */
+.highlight .nf { color: #C48AFF; font-weight: bold; } /* name function */
+.highlight .s { color: #FFA657; } /* string */
+.highlight .ss { color: #A6D6FF; } /* string symbol */
+.highlight .mi { color: #C48AFF; } /* number */
+.highlight .c { color: #75715e; font-style: italic; } /* comment */
+.highlight .c1 { color: #75715e; font-style: italic; } /* comment single */
+.highlight .o { color: #8AC8FF; } /* operator */
+.highlight .p { color: #8AC8FF; } /* punctuation */
+.highlight .na { color: #A6D6FF; } /* name attribute */
+.highlight .no { color: #F0F5FB; } /* name constant */
+.highlight .n { color: #C48AFF; } /* name */
+.highlight .nv { color: #F0F5FB; } /* name variable */
+
 /* This file is for your main application CSS */

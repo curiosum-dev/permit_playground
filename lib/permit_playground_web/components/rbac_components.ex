@@ -1,6 +1,7 @@
 defmodule PermitPlaygroundWeb.RbacComponents do
   @moduledoc false
   use Phoenix.Component
+  import Phoenix.LiveView.JS
 
   import PermitPlaygroundWeb.CoreComponents
 
@@ -369,24 +370,33 @@ defmodule PermitPlaygroundWeb.RbacComponents do
   attr :show, :boolean, required: true
   attr :permission_context, :any, required: true
   attr :selected_conditions, :map, required: true
+  attr :can_function_preview, :string, required: true
 
   def permission_conditions_modal(assigns) do
     ~H"""
     <div :if={@show}>
       <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-6 max-w-lg shadow-xl rounded-xl bg-white">
+        <div class="relative top-10 mx-auto p-6 max-w-6xl shadow-xl rounded-xl bg-white">
           <h3 class="text-xl font-bold text-gray-900 mb-6">
             {if @permission_context.existing_permission, do: "Edit Permission", else: "Add Permission"}
           </h3>
 
           <.permission_context_badge permission_context={@permission_context} />
 
-          <div :if={@permission_context.resource.resource_attributes != []} class="mb-6">
-            <.condition_help_text />
-            <.condition_attributes_list
-              attributes={@permission_context.resource.resource_attributes}
-              selected_conditions={@selected_conditions}
-            />
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1">
+              <div :if={@permission_context.resource.resource_attributes != []} class="mb-6">
+                <.condition_help_text />
+                <.condition_attributes_list
+                  attributes={@permission_context.resource.resource_attributes}
+                  selected_conditions={@selected_conditions}
+                />
+              </div>
+            </div>
+
+            <div class="lg:col-span-2">
+              <.can_function_preview can_function_preview={@can_function_preview} />
+            </div>
           </div>
 
           <.permission_modal_footer existing_permission={@permission_context.existing_permission} />
@@ -532,7 +542,7 @@ defmodule PermitPlaygroundWeb.RbacComponents do
 
   def permission_modal_footer(assigns) do
     ~H"""
-    <div class="flex justify-between items-center pt-4 border-t">
+    <div class="flex justify-between items-center pt-4">
       <button
         :if={@existing_permission}
         type="button"
@@ -578,5 +588,52 @@ defmodule PermitPlaygroundWeb.RbacComponents do
       nil -> false
       permission -> permission.conditions != %{}
     end
+  end
+
+  @doc """
+  Renders the generated can/1 function preview.
+  """
+  attr :can_function_preview, :string, required: true
+
+  def can_function_preview(assigns) do
+    highlighted_code =
+      Makeup.highlight_inner_html(
+        assigns.can_function_preview,
+        lexer: Makeup.Lexers.ElixirLexer
+      )
+
+    assigns = assign(assigns, :highlighted_code, highlighted_code)
+
+    ~H"""
+    <div class="bg-gray-50 rounded-lg p-4 h-full flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <.icon name="hero-code-bracket" class="w-5 h-5 text-blue-600" /> Generated can/1 fn
+        </h4>
+        <button
+          type="button"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none transition-all duration-200 cursor-pointer"
+          data-copy-target="#code-content"
+          phx-hook="CopyCode"
+          id="copy-code-btn"
+        >
+          <.icon name="hero-clipboard" class="w-4 h-4" /> Copy
+        </button>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto flex-1 relative">
+        <input
+          type="text"
+          id="code-content"
+          value={assigns.can_function_preview}
+          class="sr-only"
+          readonly
+        />
+        <pre
+          class="text-sm text-gray-100 font-mono whitespace-pre-wrap highlight"
+          phx-no-curly-interpolation
+        ><%= Phoenix.HTML.raw(@highlighted_code) %></pre>
+      </div>
+    </div>
+    """
   end
 end

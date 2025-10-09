@@ -40,6 +40,26 @@ const Hooks = {
         clearTimeout(this.timeout)
       }
     }
+  },
+  CopyCode: {
+    mounted() {
+      this.el.addEventListener("click", () => {
+        const preElement = document.querySelector("#code-content").nextElementSibling
+        if (preElement) {
+          const text = preElement.textContent || preElement.innerText
+          
+          const originalHTML = this.el.innerHTML
+          
+          this.el.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!'
+          
+          navigator.clipboard.writeText(text).then(() => {
+            setTimeout(() => {
+              this.el.innerHTML = originalHTML
+            }, 2000)
+          })
+        }
+      })
+    }
   }
 }
 
@@ -56,7 +76,7 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
-
+  
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
