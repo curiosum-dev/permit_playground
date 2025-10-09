@@ -1,0 +1,139 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-gray-50">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">RBAC</h1>
+        <p class="mt-2 text-gray-600">Configure role-based access control permissions</p>
+      </div>
+
+      <.management_section matrix={@matrix} />
+
+      <div class="flex flex-col gap-8">
+        <.permissions_section matrix={@matrix} />
+      </div>
+    </div>
+
+    <.permission_conditions_modal
+      :if={@selected_permission_context}
+      show={@active_modal == :condition}
+      permission_context={@selected_permission_context}
+      selected_conditions={@selected_conditions}
+    />
+  </div>
+
+  <.modal
+    :if={@selected_resource}
+    show={@active_modal == :add_attribute}
+    title={"Add Attribute to #{@selected_resource.name}"}
+    form={@attribute_form}
+    submit_event="add_attribute"
+    cancel_event="close_modal"
+    submit_label="Add Attribute"
+  >
+    <.input
+      field={@attribute_form[:name]}
+      type="text"
+      label="Attribute Name"
+      placeholder="e.g. user_id"
+      required
+    />
+  </.modal>
+
+  <.modal
+    show={@active_modal == :add_role}
+    title="Add New Role"
+    form={@role_form}
+    submit_event="add_role"
+    cancel_event="close_modal"
+  >
+    <.input field={@role_form[:name]} type="text" label="Name" placeholder="e.g. admin" required />
+  </.modal>
+
+  <.modal
+    show={@active_modal == :edit_role and @selected_role != nil}
+    title="Edit Role"
+    form={@role_form}
+    submit_event="update_role"
+    cancel_event="close_modal"
+  >
+    <.input field={@role_form[:name]} type="text" label="Name" required />
+  </.modal>
+
+  <.modal
+    show={@active_modal == :add_action}
+    title="Add New Action"
+    form={@action_form}
+    submit_event="add_action"
+    cancel_event="close_modal"
+  >
+    <.input field={@action_form[:name]} type="text" label="Name" placeholder="e.g. read" required />
+  </.modal>
+
+  <.modal
+    show={@active_modal == :edit_action and @selected_action != nil}
+    title="Edit Action"
+    form={@action_form}
+    submit_event="update_action"
+    cancel_event="close_modal"
+  >
+    <.input field={@action_form[:name]} type="text" label="Name" required />
+  </.modal>
+
+  <.modal
+    show={@active_modal == :add_resource}
+    title="Add New Resource"
+    form={@resource_form}
+    submit_event="add_resource"
+    cancel_event="close_modal"
+    submit_label="Add Resource"
+  >
+    <.input
+      field={@resource_form[:name]}
+      type="text"
+      label="Name"
+      placeholder="e.g. Article"
+      required
+    />
+    <.input
+      field={@resource_form[:resource_attributes_list]}
+      type="text"
+      label="Attributes (space-separated)"
+      placeholder="e.g. user_id published status"
+    />
+  </.modal>
+
+  <.modal
+    :if={@selected_resource}
+    show={@active_modal == :edit_resource}
+    title="Edit Resource"
+    form={@resource_form}
+    submit_event="update_resource"
+    cancel_event="close_modal"
+    submit_label="Update Resource"
+  >
+    <.input field={@resource_form[:name]} type="text" label="Name" required />
+    <.input
+      field={@resource_form[:resource_attributes_list]}
+      type="text"
+      label="Add more attributes (space-separated)"
+      placeholder="e.g. author_id category"
+    />
+    <div :if={@selected_resource.resource_attributes != []} class="mt-3 mb-4">
+      <div class="flex flex-wrap gap-2">
+        <%= for attribute <- @selected_resource.resource_attributes do %>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            {attribute.name}
+            <button
+              type="button"
+              phx-click="remove_attribute"
+              phx-value-attribute_id={attribute.id}
+              class="hover:text-blue-900 cursor-pointer"
+            >
+              <.icon name="hero-x-mark" class="w-3 h-3" />
+            </button>
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </.modal>
+</Layouts.app>

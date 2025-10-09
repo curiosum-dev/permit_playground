@@ -18,6 +18,8 @@ defmodule PermitPlaygroundWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/rbac", RBACLive, :index
   end
 
   # Other scopes may use custom stacks.

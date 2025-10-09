@@ -55,6 +55,8 @@ defmodule PermitPlaygroundWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-hook="AutoDismissFlash"
+      data-dismiss-after="2000"
       role="alert"
       class="toast toast-top toast-end z-50"
       {@rest}
