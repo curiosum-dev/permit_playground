@@ -3,18 +3,18 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   import PermitPlaygroundWeb.RbacComponents
 
-  alias PermitPlayground.RBAC
-  alias PermitPlayground.RBAC.Role
-  alias PermitPlayground.RBAC.Action
-  alias PermitPlayground.RBAC.Resource
-  alias PermitPlayground.RBAC.ResourceAttribute
+  alias PermitPlayground.Authorization
+  alias PermitPlayground.Authorization.Role
+  alias PermitPlayground.Authorization.Action
+  alias PermitPlayground.Authorization.Resource
+  alias PermitPlayground.Authorization.ResourceAttribute
   alias PermitPlayground.PermitGenerator
 
   @impl true
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:matrix, RBAC.get_permission_matrix())
+      |> assign(:matrix, Authorization.get_permission_matrix())
       |> assign(:active_modal, nil)
       |> assign(:selected_resource, nil)
       |> assign(:selected_role, nil)
@@ -43,11 +43,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
     resource_id = String.to_integer(resource_id)
 
     existing_permission =
-      RBAC.get_permission_by_role_action_resource(role_id, action_id, resource_id)
+      Authorization.get_permission_by_role_action_resource(role_id, action_id, resource_id)
 
-    role = RBAC.get_role!(role_id)
-    action = RBAC.get_action!(action_id)
-    resource = RBAC.get_resource!(resource_id, [:resource_attributes])
+    role = Authorization.get_role!(role_id)
+    action = Authorization.get_action!(action_id)
+    resource = Authorization.get_resource!(resource_id, [:resource_attributes])
 
     selected_conditions = if(existing_permission, do: existing_permission.conditions, else: %{})
 
@@ -88,11 +88,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("add_role", %{"role" => role_params}, socket) do
     name = role_params["name"]
 
-    case RBAC.create_role(%{name: name}) do
+    case Authorization.create_role(%{name: name}) do
       {:ok, _role} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> assign(:role_form, to_form(Role.changeset(%Role{}, %{})))
           |> put_flash(:info, "Role '#{name}' added successfully")
@@ -106,13 +106,13 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("remove_role", %{"role_id" => role_id}, socket) do
-    role = RBAC.get_role!(String.to_integer(role_id))
+    role = Authorization.get_role!(String.to_integer(role_id))
 
-    case RBAC.delete_role(role) do
+    case Authorization.delete_role(role) do
       {:ok, _role} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> put_flash(:info, "Role '#{role.name}' removed successfully")
 
         {:noreply, socket}
@@ -124,8 +124,8 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("show_edit_role_modal", %{"role_id" => role_id}, socket) do
-    role = RBAC.get_role!(String.to_integer(role_id))
-    role_form = to_form(RBAC.Role.changeset(role, %{}))
+    role = Authorization.get_role!(String.to_integer(role_id))
+    role_form = to_form(Authorization.Role.changeset(role, %{}))
 
     {:noreply,
      socket
@@ -138,11 +138,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("update_role", %{"role" => role_params}, socket) do
     name = role_params["name"]
 
-    case RBAC.update_role(socket.assigns.selected_role, %{name: name}) do
+    case Authorization.update_role(socket.assigns.selected_role, %{name: name}) do
       {:ok, _role} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> put_flash(:info, "Role updated")
 
@@ -162,11 +162,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("add_action", %{"action" => action_params}, socket) do
     name = action_params["name"]
 
-    case RBAC.create_action(%{name: name}) do
+    case Authorization.create_action(%{name: name}) do
       {:ok, _action} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> assign(:action_form, to_form(Action.changeset(%Action{}, %{})))
           |> put_flash(:info, "Action '#{name}' added successfully")
@@ -180,13 +180,13 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("remove_action", %{"action_id" => action_id}, socket) do
-    action = RBAC.get_action!(String.to_integer(action_id))
+    action = Authorization.get_action!(String.to_integer(action_id))
 
-    case RBAC.delete_action(action) do
+    case Authorization.delete_action(action) do
       {:ok, _action} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> put_flash(:info, "Action '#{action.name}' removed successfully")
 
         {:noreply, socket}
@@ -198,8 +198,8 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("show_edit_action_modal", %{"action_id" => action_id}, socket) do
-    action = RBAC.get_action!(String.to_integer(action_id))
-    action_form = to_form(RBAC.Action.changeset(action, %{}))
+    action = Authorization.get_action!(String.to_integer(action_id))
+    action_form = to_form(Authorization.Action.changeset(action, %{}))
 
     {:noreply,
      socket
@@ -212,11 +212,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("update_action", %{"action" => action_params}, socket) do
     name = action_params["name"]
 
-    case RBAC.update_action(socket.assigns.selected_action, %{name: name}) do
+    case Authorization.update_action(socket.assigns.selected_action, %{name: name}) do
       {:ok, _action} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> put_flash(:info, "Action updated")
 
@@ -234,11 +234,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("add_resource", %{"resource" => resource_params}, socket) do
-    case RBAC.create_resource(resource_params) do
+    case Authorization.create_resource(resource_params) do
       {:ok, _resource} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> assign(
             :resource_form,
@@ -255,13 +255,13 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("remove_resource", %{"resource_id" => resource_id}, socket) do
-    resource = RBAC.get_resource!(String.to_integer(resource_id), [:resource_attributes])
+    resource = Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes])
 
-    case RBAC.delete_resource(resource) do
+    case Authorization.delete_resource(resource) do
       {:ok, _resource} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> put_flash(:info, "Resource '#{resource.name}' removed successfully")
 
         {:noreply, socket}
@@ -273,10 +273,10 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("show_edit_resource_modal", %{"resource_id" => resource_id}, socket) do
-    resource = RBAC.get_resource!(String.to_integer(resource_id), [:resource_attributes])
+    resource = Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes])
 
     resource_with_empty_list = %{resource | resource_attributes_list: ""}
-    resource_form = to_form(RBAC.Resource.changeset(resource_with_empty_list, %{}))
+    resource_form = to_form(Authorization.Resource.changeset(resource_with_empty_list, %{}))
 
     {:noreply,
      socket
@@ -287,11 +287,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("update_resource", %{"resource" => resource_params}, socket) do
-    case RBAC.update_resource(socket.assigns.selected_resource, resource_params) do
+    case Authorization.update_resource(socket.assigns.selected_resource, resource_params) do
       {:ok, _resource} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> put_flash(:info, "Resource '#{resource_params["name"]}' updated successfully")
 
@@ -304,7 +304,7 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("show_add_attribute_modal", %{"resource_id" => resource_id}, socket) do
-    resource = RBAC.get_resource!(String.to_integer(resource_id), [:resource_attributes])
+    resource = Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes])
 
     {:noreply, socket |> show_modal(:add_attribute) |> assign(:selected_resource, resource)}
   end
@@ -313,14 +313,14 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("add_attribute", %{"resource_attribute" => attr_params}, socket) do
     name = attr_params["name"]
 
-    case RBAC.create_resource_attribute(%{
+    case Authorization.create_resource_attribute(%{
            name: name,
            resource_id: socket.assigns.selected_resource.id
          }) do
       {:ok, _attribute} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> assign(:selected_resource, nil)
           |> assign(
@@ -338,20 +338,20 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
   @impl true
   def handle_event("remove_attribute", %{"attribute_id" => attribute_id}, socket) do
-    attribute = RBAC.get_resource_attribute!(String.to_integer(attribute_id))
+    attribute = Authorization.get_resource_attribute!(String.to_integer(attribute_id))
 
-    case RBAC.delete_resource_attribute(attribute) do
+    case Authorization.delete_resource_attribute(attribute) do
       {:ok, _attribute} ->
         selected_resource =
           if socket.assigns.selected_resource do
-            RBAC.get_resource!(socket.assigns.selected_resource.id, [:resource_attributes])
+            Authorization.get_resource!(socket.assigns.selected_resource.id, [:resource_attributes])
           else
             nil
           end
 
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> assign(:selected_resource, selected_resource)
           |> put_flash(:info, "Attribute '#{attribute.name}' removed successfully")
 
@@ -441,11 +441,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
     else
       result =
         if ctx.existing_permission do
-          RBAC.update_permission(ctx.existing_permission, %{
+          Authorization.update_permission(ctx.existing_permission, %{
             conditions: conditions
           })
         else
-          RBAC.create_permission(%{
+          Authorization.create_permission(%{
             role_id: ctx.role_id,
             action_id: ctx.action_id,
             resource_id: ctx.resource_id,
@@ -459,7 +459,7 @@ defmodule PermitPlaygroundWeb.RBACLive do
 
           socket =
             socket
-            |> assign(:matrix, RBAC.get_permission_matrix())
+            |> assign(:matrix, Authorization.get_permission_matrix())
             |> hide_modal()
             |> assign(:selected_conditions, %{})
             |> put_flash(:info, "Permission #{action} successfully")
@@ -476,11 +476,11 @@ defmodule PermitPlaygroundWeb.RBACLive do
   def handle_event("delete_permission", _params, socket) do
     ctx = socket.assigns.selected_permission_context
 
-    case RBAC.delete_permission(ctx.existing_permission) do
+    case Authorization.delete_permission(ctx.existing_permission) do
       {:ok, _permission} ->
         socket =
           socket
-          |> assign(:matrix, RBAC.get_permission_matrix())
+          |> assign(:matrix, Authorization.get_permission_matrix())
           |> hide_modal()
           |> assign(:selected_conditions, %{})
           |> put_flash(:info, "Permission deleted successfully")

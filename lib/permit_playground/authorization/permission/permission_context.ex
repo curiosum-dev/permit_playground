@@ -1,12 +1,12 @@
-defmodule PermitPlayground.RBAC.PermissionContext do
+defmodule PermitPlayground.Authorization.PermissionContext do
   @moduledoc false
   use Contexted.CRUD,
     repo: PermitPlayground.Repo,
-    schema: PermitPlayground.RBAC.Permission
+    schema: PermitPlayground.Authorization.Permission
 
-  alias PermitPlayground.RBAC
+  alias PermitPlayground.Authorization
   alias PermitPlayground.Repo
-  alias PermitPlayground.RBAC.Permission
+  alias PermitPlayground.Authorization.Permission
 
   @spec get_permission_by_role_action_resource(integer(), integer(), integer()) ::
           Ecto.Schema.t() | nil
@@ -20,10 +20,10 @@ defmodule PermitPlayground.RBAC.PermissionContext do
 
   @spec get_permission_matrix() :: map()
   def get_permission_matrix do
-    roles = RBAC.list_roles()
-    actions = RBAC.list_actions()
-    resources = RBAC.list_resources([:resource_attributes])
-    permissions = RBAC.list_permissions()
+    roles = Authorization.list_roles()
+    actions = Authorization.list_actions()
+    resources = Authorization.list_resources([:resource_attributes])
+    permissions = Authorization.list_permissions()
 
     permission_map =
       permissions

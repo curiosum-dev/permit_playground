@@ -1,13 +1,13 @@
-defmodule PermitPlayground.RBAC.Permission do
+defmodule PermitPlayground.Authorization.Permission do
   use Ecto.Schema
   import Ecto.Changeset
 
   schema "permissions" do
     field :conditions, :map, default: %{}
 
-    belongs_to :role, PermitPlayground.RBAC.Role
-    belongs_to :action, PermitPlayground.RBAC.Action
-    belongs_to :resource, PermitPlayground.RBAC.Resource
+    belongs_to :role, PermitPlayground.Authorization.Role
+    belongs_to :action, PermitPlayground.Authorization.Action
+    belongs_to :resource, PermitPlayground.Authorization.Resource
 
     timestamps()
   end

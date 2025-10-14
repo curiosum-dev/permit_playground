@@ -1,12 +1,12 @@
-defmodule PermitPlayground.RBAC.ResourceContext do
+defmodule PermitPlayground.Authorization.ResourceContext do
   @moduledoc false
   use Contexted.CRUD,
     repo: PermitPlayground.Repo,
-    schema: PermitPlayground.RBAC.Resource,
+    schema: PermitPlayground.Authorization.Resource,
     exclude: [:get, :list]
 
   alias PermitPlayground.Repo
-  alias PermitPlayground.RBAC.Resource
+  alias PermitPlayground.Authorization.Resource
 
   @spec list_resources(list()) :: list()
   def list_resources(preloads \\ []) do
