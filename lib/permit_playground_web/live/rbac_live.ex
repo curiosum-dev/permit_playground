@@ -344,7 +344,9 @@ defmodule PermitPlaygroundWeb.RBACLive do
       {:ok, _attribute} ->
         selected_resource =
           if socket.assigns.selected_resource do
-            Authorization.get_resource!(socket.assigns.selected_resource.id, [:resource_attributes])
+            Authorization.get_resource!(socket.assigns.selected_resource.id, [
+              :resource_attributes
+            ])
           else
             nil
           end
