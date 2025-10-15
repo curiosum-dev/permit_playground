@@ -1,7 +1,6 @@
-defmodule PermitPlaygroundWeb.RbacComponents do
+defmodule PermitPlaygroundWeb.AuthorizationComponents do
   @moduledoc false
   use Phoenix.Component
-  import Phoenix.LiveView.JS
 
   import PermitPlaygroundWeb.CoreComponents
 
@@ -17,8 +16,6 @@ defmodule PermitPlaygroundWeb.RbacComponents do
   def management_section(assigns) do
     ~H"""
     <div class="mb-8 bg-white shadow rounded-lg p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Manage Roles, Actions & Resources</h2>
-
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <.entity_list
           title="Roles"
@@ -27,7 +24,6 @@ defmodule PermitPlaygroundWeb.RbacComponents do
           edit_event="show_edit_role_modal"
           remove_event="remove_role"
           id_key="role_id"
-          show_colon={true}
         />
 
         <.entity_list
@@ -37,7 +33,15 @@ defmodule PermitPlaygroundWeb.RbacComponents do
           edit_event="show_edit_action_modal"
           remove_event="remove_action"
           id_key="action_id"
-          show_colon={true}
+        />
+
+        <.entity_list
+          title="User Attributes"
+          items={@matrix.user_attributes}
+          add_event="show_add_user_attribute_modal"
+          edit_event="show_edit_user_attribute_modal"
+          remove_event="remove_user_attribute"
+          id_key="user_attribute_id"
         />
 
         <.resource_list resources={@matrix.resources} />
@@ -55,12 +59,11 @@ defmodule PermitPlaygroundWeb.RbacComponents do
   attr :edit_event, :string, required: true
   attr :remove_event, :string, required: true
   attr :id_key, :string, required: true
-  attr :show_colon, :boolean, default: false
 
   def entity_list(assigns) do
     ~H"""
-    <div class="border border-gray-200 rounded-lg p-4 flex flex-col max-h-96">
-      <div class="flex items-center justify-between mb-3">
+    <div class="border border-gray-200 rounded-lg p-4 flex flex-col h-80">
+      <div class="flex items-center justify-between mb-3 flex-shrink-0">
         <h3 class="text-md font-semibold text-gray-800">{@title}</h3>
         <button
           phx-click={@add_event}
@@ -69,12 +72,12 @@ defmodule PermitPlaygroundWeb.RbacComponents do
           <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Add
         </button>
       </div>
-      <div class="space-y-2 overflow-y-auto">
+      <div class="space-y-2 overflow-y-auto flex-1">
         <%= for item <- @items do %>
           <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
             <div class="flex-1">
               <div class="text-sm font-medium text-gray-700">
-                {if @show_colon, do: ":" <> item.name, else: item.name}
+                {":" <> item.name}
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -82,6 +85,7 @@ defmodule PermitPlaygroundWeb.RbacComponents do
                 phx-click={@edit_event}
                 phx-value-role_id={if @id_key == "role_id", do: item.id}
                 phx-value-action_id={if @id_key == "action_id", do: item.id}
+                phx-value-user_attribute_id={if @id_key == "user_attribute_id", do: item.id}
                 class="text-gray-600 hover:text-gray-800 cursor-pointer"
                 title="Edit"
               >
@@ -91,6 +95,7 @@ defmodule PermitPlaygroundWeb.RbacComponents do
                 phx-click={@remove_event}
                 phx-value-role_id={if @id_key == "role_id", do: item.id}
                 phx-value-action_id={if @id_key == "action_id", do: item.id}
+                phx-value-user_attribute_id={if @id_key == "user_attribute_id", do: item.id}
                 data-confirm={"Are you sure you want to delete this #{String.downcase(@title |> String.trim_trailing("s"))}?"}
                 class="text-red-600 hover:text-red-800 cursor-pointer"
                 title="Delete"
@@ -112,8 +117,8 @@ defmodule PermitPlaygroundWeb.RbacComponents do
 
   def resource_list(assigns) do
     ~H"""
-    <div class="border border-gray-200 rounded-lg p-4 flex flex-col max-h-96">
-      <div class="flex items-center justify-between mb-3">
+    <div class="border border-gray-200 rounded-lg p-4 flex flex-col h-80">
+      <div class="flex items-center justify-between mb-3 flex-shrink-0">
         <h3 class="text-md font-semibold text-gray-800">Resources</h3>
         <button
           phx-click="show_add_resource_modal"
@@ -122,7 +127,7 @@ defmodule PermitPlaygroundWeb.RbacComponents do
           <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Add
         </button>
       </div>
-      <div class="space-y-2 overflow-y-auto">
+      <div class="space-y-2 overflow-y-auto flex-1">
         <%= for resource <- @resources do %>
           <div class="bg-gray-50 px-3 py-2 rounded">
             <div class="flex items-center justify-between mb-2">

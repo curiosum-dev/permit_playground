@@ -22,6 +22,7 @@ defmodule PermitPlayground.Authorization.PermissionContext do
   def get_permission_matrix do
     roles = Authorization.list_roles()
     actions = Authorization.list_actions()
+    user_attributes = Authorization.list_user_attributes()
     resources = Authorization.list_resources([:resource_attributes])
     permissions = Authorization.list_permissions()
 
@@ -34,6 +35,7 @@ defmodule PermitPlayground.Authorization.PermissionContext do
     %{
       roles: roles,
       actions: actions,
+      user_attributes: user_attributes,
       resources: resources,
       permissions: permission_map
     }
