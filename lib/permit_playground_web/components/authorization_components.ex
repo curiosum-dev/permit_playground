@@ -5,7 +5,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   import PermitPlaygroundWeb.CoreComponents
 
   @doc """
-  Renders the management section for Roles, Actions, and Resources.
+  Renders the management section for Roles, Actions, User attributes and Resources.
 
   ## Examples
 

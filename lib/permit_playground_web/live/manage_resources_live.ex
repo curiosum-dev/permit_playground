@@ -17,9 +17,6 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
       socket
       |> assign(:matrix, Authorization.get_permission_matrix())
       |> assign(:active_modal, nil)
-      |> assign(:selected_resource, nil)
-      |> assign(:selected_role, nil)
-      |> assign(:selected_action, nil)
       |> assign(:role_form, to_form(Role.changeset(%Role{}, %{})))
       |> assign(:action_form, to_form(Action.changeset(%Action{}, %{})))
       |> assign(
@@ -34,7 +31,10 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("close_modal", _params, socket) do
-    {:noreply, hide_modal(socket)}
+    {:noreply,
+     socket
+     |> hide_modal()
+     |> assign(:editing_resource, nil)}
   end
 
   # Roles
@@ -65,18 +65,14 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_role", %{"role_id" => role_id}, socket) do
-    role = Authorization.get_role!(String.to_integer(role_id))
-
-    case Authorization.delete_role(role) do
-      {:ok, _role} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> put_flash(:info, "Role '#{role.name}' removed successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
+    with %Authorization.Role{} = role <- Authorization.get_role!(String.to_integer(role_id)),
+         {:ok, %Authorization.Role{}} <- Authorization.delete_role(role) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> put_flash(:info, "Role '#{role.name}' removed successfully")}
+    else
+      _error ->
         {:noreply, put_flash(socket, :error, "Failed to remove role")}
     end
   end
@@ -89,26 +85,23 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
     {:noreply,
      socket
      |> show_modal(:edit_role)
-     |> assign(:selected_role, role)
      |> assign(:role_form, role_form)}
   end
 
   @impl true
-  def handle_event("update_role", %{"role" => role_params}, socket) do
+  def handle_event("update_role", %{"role" => role_params, "role_id" => role_id}, socket) do
     name = role_params["name"]
 
-    case Authorization.update_role(socket.assigns.selected_role, %{name: name}) do
-      {:ok, _role} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> hide_modal()
-          |> put_flash(:info, "Role updated")
-
-        {:noreply, socket}
-
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, format_errors(changeset))}
+    with %Authorization.Role{} = role <- Authorization.get_role!(String.to_integer(role_id)),
+         {:ok, %Authorization.Role{}} <- Authorization.update_role(role, %{name: name}) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> hide_modal()
+       |> put_flash(:info, "Role updated successfully")}
+    else
+      _error ->
+        {:noreply, put_flash(socket, :error, "Failed to update role")}
     end
   end
 
@@ -140,18 +133,14 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_action", %{"action_id" => action_id}, socket) do
-    action = Authorization.get_action!(String.to_integer(action_id))
-
-    case Authorization.delete_action(action) do
-      {:ok, _action} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> put_flash(:info, "Action '#{action.name}' removed successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
+    with %Authorization.Action{} = action <- Authorization.get_action!(String.to_integer(action_id)),
+         {:ok, %Authorization.Action{}} <- Authorization.delete_action(action) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> put_flash(:info, "Action '#{action.name}' removed successfully")}
+    else
+      _error ->
         {:noreply, put_flash(socket, :error, "Failed to remove action")}
     end
   end
@@ -164,26 +153,23 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
     {:noreply,
      socket
      |> show_modal(:edit_action)
-     |> assign(:selected_action, action)
      |> assign(:action_form, action_form)}
   end
 
   @impl true
-  def handle_event("update_action", %{"action" => action_params}, socket) do
+  def handle_event("update_action", %{"action" => action_params, "action_id" => action_id}, socket) do
     name = action_params["name"]
 
-    case Authorization.update_action(socket.assigns.selected_action, %{name: name}) do
-      {:ok, _action} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> hide_modal()
-          |> put_flash(:info, "Action updated")
-
-        {:noreply, socket}
-
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, format_errors(changeset))}
+    with %Authorization.Action{} = action <- Authorization.get_action!(String.to_integer(action_id)),
+         {:ok, %Authorization.Action{}} <- Authorization.update_action(action, %{name: name}) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> hide_modal()
+       |> put_flash(:info, "Action updated successfully")}
+    else
+      _error ->
+        {:noreply, put_flash(socket, :error, "Failed to update action")}
     end
   end
 
@@ -215,18 +201,14 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_user_attribute", %{"user_attribute_id" => user_attribute_id}, socket) do
-    user_attribute = Authorization.get_user_attribute!(String.to_integer(user_attribute_id))
-
-    case Authorization.delete_user_attribute(user_attribute) do
-      {:ok, _user_attribute} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> put_flash(:info, "User attribute '#{user_attribute.name}' removed successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
+    with %Authorization.UserAttribute{} = user_attribute <- Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
+         {:ok, %Authorization.UserAttribute{}} <- Authorization.delete_user_attribute(user_attribute) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> put_flash(:info, "User attribute '#{user_attribute.name}' removed successfully")}
+    else
+      _error ->
         {:noreply, put_flash(socket, :error, "Failed to remove user attribute")}
     end
   end
@@ -243,26 +225,23 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
     {:noreply,
      socket
      |> show_modal(:edit_user_attribute)
-     |> assign(:selected_user_attribute, user_attribute)
      |> assign(:user_attribute_form, user_attribute_form)}
   end
 
   @impl true
-  def handle_event("update_user_attribute", %{"user_attribute" => user_attribute_params}, socket) do
+  def handle_event("update_user_attribute", %{"user_attribute" => user_attribute_params, "user_attribute_id" => user_attribute_id}, socket) do
     name = user_attribute_params["name"]
 
-    case Authorization.update_user_attribute(socket.assigns.selected_user_attribute, %{name: name}) do
-      {:ok, _user_attribute} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> hide_modal()
-          |> put_flash(:info, "User attribute updated")
-
-        {:noreply, socket}
-
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, format_errors(changeset))}
+    with %Authorization.UserAttribute{} = user_attribute <- Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
+         {:ok, %Authorization.UserAttribute{}} <- Authorization.update_user_attribute(user_attribute, %{name: name}) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> hide_modal()
+       |> put_flash(:info, "User attribute updated successfully")}
+    else
+      _error ->
+        {:noreply, put_flash(socket, :error, "Failed to update user attribute")}
     end
   end
 
@@ -295,18 +274,14 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_resource", %{"resource_id" => resource_id}, socket) do
-    resource = Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes])
-
-    case Authorization.delete_resource(resource) do
-      {:ok, _resource} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> put_flash(:info, "Resource '#{resource.name}' removed successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
+    with %Authorization.Resource{} = resource <- Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes]),
+         {:ok, %Authorization.Resource{}} <- Authorization.delete_resource(resource) do
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> put_flash(:info, "Resource '#{resource.name}' removed successfully")}
+    else
+      _error ->
         {:noreply, put_flash(socket, :error, "Failed to remove resource")}
     end
   end
@@ -315,57 +290,62 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
   def handle_event("show_edit_resource_modal", %{"resource_id" => resource_id}, socket) do
     resource = Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes])
 
+    # Create a changeset with the resource data including preloaded attributes
     resource_with_empty_list = %{resource | resource_attributes_list: ""}
-    resource_form = to_form(Authorization.Resource.changeset(resource_with_empty_list, %{}))
+    changeset = Authorization.Resource.changeset(resource_with_empty_list, %{})
+
+    # Create form with the resource data (including preloaded attributes) as the source
+    resource_form = to_form(changeset, as: "resource")
 
     {:noreply,
      socket
      |> show_modal(:edit_resource)
-     |> assign(:selected_resource, resource)
-     |> assign(:resource_form, resource_form)}
+     |> assign(:resource_form, resource_form)
+     |> assign(:editing_resource, resource)}
   end
 
   @impl true
-  def handle_event("update_resource", %{"resource" => resource_params}, socket) do
-    case Authorization.update_resource(socket.assigns.selected_resource, resource_params) do
-      {:ok, _resource} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> hide_modal()
-          |> put_flash(:info, "Resource '#{resource_params["name"]}' updated successfully")
+  def handle_event("update_resource", %{"resource" => resource_params, "resource_id" => resource_id}, socket) do
+    resource_id_int = String.to_integer(resource_id)
 
-        {:noreply, socket}
+    with %Authorization.Resource{} = resource <- Authorization.get_resource!(resource_id_int, [:resource_attributes]),
+         {:ok, %Authorization.Resource{}} <- Authorization.update_resource(resource, resource_params) do
 
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, format_errors(changeset))}
+      # Refresh the matrix to show updated resource with new attributes
+      updated_matrix = Authorization.get_permission_matrix()
+
+      {:noreply,
+       socket
+       |> assign(:matrix, updated_matrix)
+       |> hide_modal()
+       |> assign(:editing_resource, nil)
+       |> put_flash(:info, "Resource '#{resource_params["name"]}' updated successfully")}
+    else
+      _error ->
+        {:noreply, put_flash(socket, :error, "Failed to update resource")}
     end
   end
 
   @impl true
   def handle_event("remove_attribute", %{"attribute_id" => attribute_id}, socket) do
-    attribute = Authorization.get_resource_attribute!(String.to_integer(attribute_id))
+    with %Authorization.ResourceAttribute{} = attribute <- Authorization.get_resource_attribute!(String.to_integer(attribute_id)),
+         {:ok, %Authorization.ResourceAttribute{}} <- Authorization.delete_resource_attribute(attribute) do
 
-    case Authorization.delete_resource_attribute(attribute) do
-      {:ok, _attribute} ->
-        selected_resource =
-          if socket.assigns.selected_resource do
-            Authorization.get_resource!(socket.assigns.selected_resource.id, [
-              :resource_attributes
-            ])
-          else
-            nil
-          end
+      # Refresh the editing_resource with updated attributes if we're editing a resource
+      updated_editing_resource =
+        if socket.assigns.editing_resource && socket.assigns.editing_resource.id == attribute.resource_id do
+          Authorization.get_resource!(attribute.resource_id, [:resource_attributes])
+        else
+          socket.assigns.editing_resource
+        end
 
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix())
-          |> assign(:selected_resource, selected_resource)
-          |> put_flash(:info, "Attribute '#{attribute.name}' removed successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
+      {:noreply,
+       socket
+       |> assign(:matrix, Authorization.get_permission_matrix())
+       |> assign(:editing_resource, updated_editing_resource)
+       |> put_flash(:info, "Attribute '#{attribute.name}' removed successfully")}
+    else
+      _error ->
         {:noreply, put_flash(socket, :error, "Failed to remove attribute")}
     end
   end

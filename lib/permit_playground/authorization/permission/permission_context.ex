@@ -18,8 +18,8 @@ defmodule PermitPlayground.Authorization.PermissionContext do
     )
   end
 
-  @spec get_permission_matrix() :: map()
-  def get_permission_matrix do
+  @spec get_permission_matrix(:role | :attribute) :: map()
+  def get_permission_matrix(type \\ :role) when type in [:role, :attribute] do
     roles = Authorization.list_roles()
     actions = Authorization.list_actions()
     user_attributes = Authorization.list_user_attributes()
@@ -29,7 +29,11 @@ defmodule PermitPlayground.Authorization.PermissionContext do
     permission_map =
       permissions
       |> Enum.into(%{}, fn p ->
-        {{p.role_id, p.action_id, p.resource_id}, p}
+        if p.role_id do
+          {{p.role_id, p.action_id, p.resource_id}, p}
+        else
+          {{p.user_attribute_id, p.action_id, p.resource_id}, p}
+        end
       end)
 
     %{
@@ -37,9 +41,10 @@ defmodule PermitPlayground.Authorization.PermissionContext do
       actions: actions,
       user_attributes: user_attributes,
       resources: resources,
-      permissions: permission_map
+      permissions: permission_map,
+      type: type
     }
-  end
+    end
 
   @spec toggle_permission(integer(), integer(), integer(), map()) ::
           {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}

@@ -16,18 +16,8 @@ defmodule PermitPlaygroundWeb.RBACLive do
       socket
       |> assign(:matrix, Authorization.get_permission_matrix())
       |> assign(:active_modal, nil)
-      |> assign(:selected_resource, nil)
-      |> assign(:selected_role, nil)
-      |> assign(:selected_action, nil)
       |> assign(:selected_permission_context, nil)
       |> assign(:selected_conditions, %{})
-      |> assign(:role_form, to_form(Role.changeset(%Role{}, %{})))
-      |> assign(:action_form, to_form(Action.changeset(%Action{}, %{})))
-      |> assign(
-        :resource_form,
-        to_form(Resource.changeset(%Resource{}, %{resource_attributes_list: ""}))
-      )
-      |> assign(:attribute_form, to_form(ResourceAttribute.changeset(%ResourceAttribute{}, %{})))
 
     {:ok, socket}
   end
