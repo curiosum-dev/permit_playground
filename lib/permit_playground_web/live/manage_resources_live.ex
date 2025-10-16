@@ -9,7 +9,6 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
   alias PermitPlayground.Authorization.Resource
   alias PermitPlayground.Authorization.ResourceAttribute
   alias PermitPlayground.Authorization.UserAttribute
-  alias PermitPlayground.PermitGenerator
 
   @impl true
   def mount(_params, _session, socket) do

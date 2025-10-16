@@ -4,11 +4,6 @@ defmodule PermitPlaygroundWeb.RBACLive do
   import PermitPlaygroundWeb.AuthorizationComponents
 
   alias PermitPlayground.Authorization
-  alias PermitPlayground.Authorization.Role
-  alias PermitPlayground.Authorization.Action
-  alias PermitPlayground.Authorization.Resource
-  alias PermitPlayground.Authorization.ResourceAttribute
-  alias PermitPlayground.PermitGenerator
 
   @impl true
   def mount(_params, _session, socket) do
@@ -58,7 +53,12 @@ defmodule PermitPlaygroundWeb.RBACLive do
       |> assign(:selected_conditions, selected_conditions)
       |> assign(
         :can_function_preview,
-        PermitGenerator.generate_can_preview(role, action, resource, selected_conditions)
+        PermitPlayground.PermitGenerator.generate_can_preview(
+          role,
+          action,
+          resource,
+          selected_conditions
+        )
       )
 
     {:noreply, socket}
@@ -83,7 +83,7 @@ defmodule PermitPlaygroundWeb.RBACLive do
     ctx = socket.assigns.selected_permission_context
 
     updated_preview =
-      PermitGenerator.generate_can_preview(
+      PermitPlayground.PermitGenerator.generate_can_preview(
         ctx.role,
         ctx.action,
         ctx.resource,
@@ -110,7 +110,7 @@ defmodule PermitPlaygroundWeb.RBACLive do
     ctx = socket.assigns.selected_permission_context
 
     updated_preview =
-      PermitGenerator.generate_can_preview(
+      PermitPlayground.PermitGenerator.generate_can_preview(
         ctx.role,
         ctx.action,
         ctx.resource,
