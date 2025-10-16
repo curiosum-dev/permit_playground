@@ -133,7 +133,8 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_action", %{"action_id" => action_id}, socket) do
-    with %Authorization.Action{} = action <- Authorization.get_action!(String.to_integer(action_id)),
+    with %Authorization.Action{} = action <-
+           Authorization.get_action!(String.to_integer(action_id)),
          {:ok, %Authorization.Action{}} <- Authorization.delete_action(action) do
       {:noreply,
        socket
@@ -157,10 +158,15 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
   end
 
   @impl true
-  def handle_event("update_action", %{"action" => action_params, "action_id" => action_id}, socket) do
+  def handle_event(
+        "update_action",
+        %{"action" => action_params, "action_id" => action_id},
+        socket
+      ) do
     name = action_params["name"]
 
-    with %Authorization.Action{} = action <- Authorization.get_action!(String.to_integer(action_id)),
+    with %Authorization.Action{} = action <-
+           Authorization.get_action!(String.to_integer(action_id)),
          {:ok, %Authorization.Action{}} <- Authorization.update_action(action, %{name: name}) do
       {:noreply,
        socket
@@ -201,8 +207,10 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_user_attribute", %{"user_attribute_id" => user_attribute_id}, socket) do
-    with %Authorization.UserAttribute{} = user_attribute <- Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
-         {:ok, %Authorization.UserAttribute{}} <- Authorization.delete_user_attribute(user_attribute) do
+    with %Authorization.UserAttribute{} = user_attribute <-
+           Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
+         {:ok, %Authorization.UserAttribute{}} <-
+           Authorization.delete_user_attribute(user_attribute) do
       {:noreply,
        socket
        |> assign(:matrix, Authorization.get_permission_matrix())
@@ -229,11 +237,17 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
   end
 
   @impl true
-  def handle_event("update_user_attribute", %{"user_attribute" => user_attribute_params, "user_attribute_id" => user_attribute_id}, socket) do
+  def handle_event(
+        "update_user_attribute",
+        %{"user_attribute" => user_attribute_params, "user_attribute_id" => user_attribute_id},
+        socket
+      ) do
     name = user_attribute_params["name"]
 
-    with %Authorization.UserAttribute{} = user_attribute <- Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
-         {:ok, %Authorization.UserAttribute{}} <- Authorization.update_user_attribute(user_attribute, %{name: name}) do
+    with %Authorization.UserAttribute{} = user_attribute <-
+           Authorization.get_user_attribute!(String.to_integer(user_attribute_id)),
+         {:ok, %Authorization.UserAttribute{}} <-
+           Authorization.update_user_attribute(user_attribute, %{name: name}) do
       {:noreply,
        socket
        |> assign(:matrix, Authorization.get_permission_matrix())
@@ -274,7 +288,8 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_resource", %{"resource_id" => resource_id}, socket) do
-    with %Authorization.Resource{} = resource <- Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes]),
+    with %Authorization.Resource{} = resource <-
+           Authorization.get_resource!(String.to_integer(resource_id), [:resource_attributes]),
          {:ok, %Authorization.Resource{}} <- Authorization.delete_resource(resource) do
       {:noreply,
        socket
@@ -305,12 +320,17 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
   end
 
   @impl true
-  def handle_event("update_resource", %{"resource" => resource_params, "resource_id" => resource_id}, socket) do
+  def handle_event(
+        "update_resource",
+        %{"resource" => resource_params, "resource_id" => resource_id},
+        socket
+      ) do
     resource_id_int = String.to_integer(resource_id)
 
-    with %Authorization.Resource{} = resource <- Authorization.get_resource!(resource_id_int, [:resource_attributes]),
-         {:ok, %Authorization.Resource{}} <- Authorization.update_resource(resource, resource_params) do
-
+    with %Authorization.Resource{} = resource <-
+           Authorization.get_resource!(resource_id_int, [:resource_attributes]),
+         {:ok, %Authorization.Resource{}} <-
+           Authorization.update_resource(resource, resource_params) do
       # Refresh the matrix to show updated resource with new attributes
       updated_matrix = Authorization.get_permission_matrix()
 
@@ -328,12 +348,14 @@ defmodule PermitPlaygroundWeb.ManageResourcesLive do
 
   @impl true
   def handle_event("remove_attribute", %{"attribute_id" => attribute_id}, socket) do
-    with %Authorization.ResourceAttribute{} = attribute <- Authorization.get_resource_attribute!(String.to_integer(attribute_id)),
-         {:ok, %Authorization.ResourceAttribute{}} <- Authorization.delete_resource_attribute(attribute) do
-
+    with %Authorization.ResourceAttribute{} = attribute <-
+           Authorization.get_resource_attribute!(String.to_integer(attribute_id)),
+         {:ok, %Authorization.ResourceAttribute{}} <-
+           Authorization.delete_resource_attribute(attribute) do
       # Refresh the editing_resource with updated attributes if we're editing a resource
       updated_editing_resource =
-        if socket.assigns.editing_resource && socket.assigns.editing_resource.id == attribute.resource_id do
+        if socket.assigns.editing_resource &&
+             socket.assigns.editing_resource.id == attribute.resource_id do
           Authorization.get_resource!(attribute.resource_id, [:resource_attributes])
         else
           socket.assigns.editing_resource

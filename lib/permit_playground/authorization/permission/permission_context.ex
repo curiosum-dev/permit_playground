@@ -18,6 +18,16 @@ defmodule PermitPlayground.Authorization.PermissionContext do
     )
   end
 
+  @spec get_permission_by_user_attribute_action_resource(integer(), integer(), integer()) ::
+          Ecto.Schema.t() | nil
+  def get_permission_by_user_attribute_action_resource(user_attribute_id, action_id, resource_id) do
+    Repo.get_by(Permission,
+      user_attribute_id: user_attribute_id,
+      action_id: action_id,
+      resource_id: resource_id
+    )
+  end
+
   @spec get_permission_matrix(:role | :attribute) :: map()
   def get_permission_matrix(type \\ :role) when type in [:role, :attribute] do
     roles = Authorization.list_roles()
@@ -44,7 +54,7 @@ defmodule PermitPlayground.Authorization.PermissionContext do
       permissions: permission_map,
       type: type
     }
-    end
+  end
 
   @spec toggle_permission(integer(), integer(), integer(), map()) ::
           {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}

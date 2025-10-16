@@ -16,7 +16,13 @@ defmodule PermitPlayground.Repo.Migrations.CreatePermissions do
     create index(:permissions, [:user_attribute_id])
     create index(:permissions, [:action_id])
     create index(:permissions, [:resource_id])
-    create unique_index(:permissions, [:role_id, :action_id, :resource_id], name: :permissions_role_action_resource_index)
-    create unique_index(:permissions, [:user_attribute_id, :action_id, :resource_id], name: :permissions_user_attribute_action_resource_index)
+
+    create unique_index(:permissions, [:role_id, :action_id, :resource_id],
+             name: :permissions_role_action_resource_index
+           )
+
+    create unique_index(:permissions, [:user_attribute_id, :action_id, :resource_id],
+             name: :permissions_user_attribute_action_resource_index
+           )
   end
 end

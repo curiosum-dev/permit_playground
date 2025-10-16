@@ -19,7 +19,7 @@ defmodule PermitPlayground.Authorization.Permission do
   end
 
   @required_fields ~w(action_id resource_id)a
-  @optional_fields ~w(role_id user_attribute_id)a
+  @optional_fields ~w(role_id user_attribute_id conditions)a
 
   @spec changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def changeset(permission, attrs) do

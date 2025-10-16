@@ -5,36 +5,78 @@ defmodule PermitPlayground.PermitGenerator do
 
   alias PermitPlayground.ConditionParser
 
-  def generate_can_function_preview(role, action, resource, conditions \\ %{}) do
+  def generate_can_preview(role, action, resource, conditions \\ %{}, opts \\ %{}) do
+    is_abac? = Map.has_key?(opts, :include_user_attr?)
     action_name = String.to_atom(action.name)
     resource_name = resource.name
-
     parsed_conditions = ConditionParser.parse_conditions(conditions)
 
-    permission_call =
-      if map_size(parsed_conditions) == 0 do
-        "    |> #{action_name}(#{resource_name})"
-      else
-        condition_pairs = format_conditions(parsed_conditions)
-        "    |> #{action_name}(#{resource_name}, #{condition_pairs})"
-      end
+    all_conditions = build_conditions(parsed_conditions, role, opts, is_abac?)
+    function_head = build_function_head(role, is_abac?)
 
+    permission_call =
+      build_permission_call(action_name, resource_name, all_conditions, role, is_abac?)
+
+    build_complete_function(function_head, permission_call)
+  end
+
+  defp build_conditions(parsed_conditions, role, opts, is_abac?) do
+    if is_abac? and Map.get(opts, :include_user_attr?, true) do
+      user_attr_key = String.to_atom(role.name)
+      Map.put(parsed_conditions, user_attr_key, role.name)
+    else
+      parsed_conditions
+    end
+  end
+
+  defp build_function_head(role, is_abac?) do
+    if is_abac? do
+      "def can(%User{#{role.name}: #{role.name}} = user) do"
+    else
+      "def can(%{role: :#{role.name}} = user) do"
+    end
+  end
+
+  defp build_permission_call(action_name, resource_name, all_conditions, role, is_abac?) do
+    if map_size(all_conditions) == 0 do
+      "    |> #{action_name}(#{resource_name})"
+    else
+      condition_pairs = format_conditions(all_conditions, role, is_abac?)
+      "    |> #{action_name}(#{resource_name}, #{condition_pairs})"
+    end
+  end
+
+  defp build_complete_function(function_head, permission_call) do
     """
-    def can(%{role: :#{role.name}} = user) do
+    #{function_head}
       permit()
     #{permission_call}
     end
     """
   end
 
-  defp format_conditions(conditions) do
-    conditions
-    |> Enum.map(&format_condition/1)
-    |> Enum.join(", ")
+  defp format_conditions(conditions, role, is_abac?) do
+    if is_abac? do
+      {user_attr_pair, other_pairs} =
+        Enum.split_with(conditions, fn {_field, val} -> val == role.name end)
+
+      ordered_pairs = user_attr_pair ++ other_pairs
+
+      ordered_pairs
+      |> Enum.map(&format_condition(&1, role.name))
+      |> Enum.join(", ")
+    else
+      conditions
+      |> Enum.map(&format_condition(&1, nil))
+      |> Enum.join(", ")
+    end
   end
 
-  defp format_condition({field, value}) do
+  defp format_condition({field, value}, user_attr_var) do
     case value do
+      ^user_attr_var when user_attr_var != nil ->
+        "#{field}: #{user_attr_var}"
+
       {op, val} when op in [:!=, :>, :>=, :<, :<=, :like, :ilike] ->
         "#{field}: {#{inspect(op)}, #{inspect(val)}}"
 

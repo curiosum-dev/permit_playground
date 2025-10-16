@@ -229,7 +229,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-lg font-medium text-gray-900">Permissions</h2>
         <p class="text-sm text-gray-500">
-          Click to toggle permissions for each role and resource
+          Click to toggle permissions
         </p>
       </div>
 
@@ -256,31 +256,49 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   end
 
   @doc """
-  Renders the permissions matrix with roles, actions, and resources.
+  Renders the permissions matrix with roles or user attributes, actions, and resources.
   """
   attr :matrix, :map, required: true
 
   def permissions_matrix(assigns) do
     ~H"""
     <div class="space-y-6">
-      <%= for role <- @matrix.roles do %>
-        <.role_permissions_table role={role} matrix={@matrix} />
+      <%= if @matrix.type == :role do %>
+        <%= for role <- @matrix.roles do %>
+          <.entity_permissions_table entity={role} matrix={@matrix} entity_type={:role} />
+        <% end %>
+      <% else %>
+        <%= for user_attribute <- @matrix.user_attributes do %>
+          <.entity_permissions_table
+            entity={user_attribute}
+            matrix={@matrix}
+            entity_type={:attribute}
+          />
+        <% end %>
       <% end %>
     </div>
     """
   end
 
   @doc """
-  Renders a permissions table for a single role.
+  Renders a permissions table for a single entity (role or user attribute).
   """
-  attr :role, :map, required: true
+  attr :entity, :map, required: true
   attr :matrix, :map, required: true
+  attr :entity_type, :atom, required: true
 
-  def role_permissions_table(assigns) do
+  def entity_permissions_table(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :title,
+        if(assigns.entity_type == :role, do: "Role", else: "User attribute")
+      )
+
     ~H"""
     <div class="border border-gray-200 rounded-lg p-4">
       <h3 class="text-md font-semibold text-gray-800 mb-4">
-        Role: <span class="text-blue-600">{":" <> @role.name}</span>
+        {@title}: <span class="text-blue-600">{":" <> @entity.name}</span>
       </h3>
 
       <div class="overflow-x-auto">
@@ -306,7 +324,8 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
                 <%= for action <- @matrix.actions do %>
                   <td class="px-3 py-2 text-center">
                     <.permission_toggle
-                      role_id={@role.id}
+                      entity_type={@entity_type}
+                      entity_id={@entity.id}
                       action_id={action.id}
                       resource_id={resource.id}
                       matrix={@matrix}
@@ -325,28 +344,28 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   @doc """
   Renders a permission toggle button with condition indicator.
   """
-  attr :role_id, :integer, required: true
+  attr :entity_type, :atom, required: true, doc: "Either :role or :attribute"
+  attr :entity_id, :integer, required: true, doc: "ID of the role or user attribute"
   attr :action_id, :integer, required: true
   attr :resource_id, :integer, required: true
   attr :matrix, :map, required: true
 
   def permission_toggle(assigns) do
+    permission =
+      get_permission(assigns.matrix, assigns.entity_id, assigns.action_id, assigns.resource_id)
+
     assigns =
       assigns
-      |> assign(
-        :has_permission,
-        has_permission?(assigns.matrix, assigns.role_id, assigns.action_id, assigns.resource_id)
-      )
-      |> assign(
-        :has_conditions,
-        has_conditions?(assigns.matrix, assigns.role_id, assigns.action_id, assigns.resource_id)
-      )
+      |> assign(:permission, permission)
+      |> assign(:has_permission, !!permission)
+      |> assign(:has_conditions, has_conditions?(permission))
 
     ~H"""
     <div class="relative inline-block">
       <button
         phx-click="toggle_permission"
-        phx-value-role_id={@role_id}
+        phx-value-role_id={if @entity_type == :role, do: @entity_id}
+        phx-value-user_attribute_id={if @entity_type == :attribute, do: @entity_id}
         phx-value-action_id={@action_id}
         phx-value-resource_id={@resource_id}
         class={[
@@ -369,6 +388,18 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     """
   end
 
+  defp get_permission(matrix, entity_id, action_id, resource_id) do
+    permission_key = {entity_id, action_id, resource_id}
+    Map.get(matrix.permissions, permission_key)
+  end
+
+  defp has_conditions?(nil), do: false
+
+  defp has_conditions?(permission) do
+    conditions = Map.get(permission, :conditions, %{})
+    map_size(conditions) > 0
+  end
+
   @doc """
   Renders the permission conditions modal.
   """
@@ -376,6 +407,8 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   attr :permission_context, :any, required: true
   attr :selected_conditions, :map, required: true
   attr :can_function_preview, :string, required: true
+
+  attr :include_user_attr?, :boolean, default: true
 
   def permission_conditions_modal(assigns) do
     ~H"""
@@ -390,6 +423,18 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-1">
+              <div :if={Map.has_key?(@permission_context, :user_attribute)} class="mb-6">
+                <label class="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={@include_user_attr?}
+                    phx-click="toggle_include_user_attr"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span class="text-sm text-gray-700">Use pattern matched attr in rule</span>
+                </label>
+              </div>
+
               <div :if={@permission_context.resource.resource_attributes != []} class="mb-6">
                 <.condition_help_text />
                 <.condition_attributes_list
@@ -421,7 +466,10 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
       <div class="flex items-center justify-center gap-2 text-sm">
         <span class="px-3 py-1 bg-white rounded-full font-medium text-blue-600">
-          {":" <> @permission_context.role.name}
+          {":" <>
+            if Map.has_key?(@permission_context, :role),
+              do: @permission_context.role.name,
+              else: @permission_context.user_attribute.name}
         </span>
         <span class="text-gray-400">→</span>
         <span class="px-3 py-1 bg-white rounded-full font-medium text-green-600">
@@ -581,17 +629,17 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
 
   # Helper functions
   defp is_matrix_empty?(matrix) do
-    Enum.empty?(matrix.roles) or Enum.empty?(matrix.actions) or Enum.empty?(matrix.resources)
-  end
+    case matrix.type do
+      :role ->
+        Enum.empty?(matrix.roles) or Enum.empty?(matrix.actions) or Enum.empty?(matrix.resources)
 
-  defp has_permission?(matrix, role_id, action_id, resource_id) do
-    Map.has_key?(matrix.permissions, {role_id, action_id, resource_id})
-  end
+      :attribute ->
+        Enum.empty?(matrix.user_attributes) or Enum.empty?(matrix.actions) or
+          Enum.empty?(matrix.resources)
 
-  defp has_conditions?(matrix, role_id, action_id, resource_id) do
-    case Map.get(matrix.permissions, {role_id, action_id, resource_id}) do
-      nil -> false
-      permission -> permission.conditions != %{}
+      :management ->
+        Enum.empty?(matrix.roles) or Enum.empty?(matrix.user_attributes) or
+          Enum.empty?(matrix.actions) or Enum.empty?(matrix.resources)
     end
   end
 
@@ -613,7 +661,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     <div class="bg-gray-50 rounded-lg p-4 h-full flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <.icon name="hero-code-bracket" class="w-5 h-5 text-blue-600" /> Generated can/1 fn
+          <.icon name="hero-code-bracket" class="w-5 h-5 text-blue-600" /> Generated can/1
         </h4>
         <button
           type="button"
