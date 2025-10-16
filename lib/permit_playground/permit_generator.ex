@@ -22,8 +22,9 @@ defmodule PermitPlayground.PermitGenerator do
 
   defp build_conditions(parsed_conditions, role, opts, is_abac?) do
     if is_abac? and Map.get(opts, :include_user_attr?, true) do
+      user_attr_var = "user_#{role.name}"
       user_attr_key = String.to_atom(role.name)
-      Map.put(parsed_conditions, user_attr_key, role.name)
+      Map.put(parsed_conditions, user_attr_key, user_attr_var)
     else
       parsed_conditions
     end
@@ -31,7 +32,8 @@ defmodule PermitPlayground.PermitGenerator do
 
   defp build_function_head(role, is_abac?) do
     if is_abac? do
-      "def can(%User{#{role.name}: #{role.name}} = user) do"
+      user_attr_var = "user_#{role.name}"
+      "def can(%User{#{role.name}: #{user_attr_var}} = user) do"
     else
       "def can(%{role: :#{role.name}} = user) do"
     end
@@ -57,13 +59,14 @@ defmodule PermitPlayground.PermitGenerator do
 
   defp format_conditions(conditions, role, is_abac?) do
     if is_abac? do
+      user_attr_var = "user_#{role.name}"
       {user_attr_pair, other_pairs} =
-        Enum.split_with(conditions, fn {_field, val} -> val == role.name end)
+        Enum.split_with(conditions, fn {_field, val} -> val == user_attr_var end)
 
       ordered_pairs = user_attr_pair ++ other_pairs
 
       ordered_pairs
-      |> Enum.map(&format_condition(&1, role.name))
+      |> Enum.map(&format_condition(&1, user_attr_var))
       |> Enum.join(", ")
     else
       conditions
@@ -75,7 +78,7 @@ defmodule PermitPlayground.PermitGenerator do
   defp format_condition({field, value}, user_attr_var) do
     case value do
       ^user_attr_var when user_attr_var != nil ->
-        "#{field}: #{user_attr_var}"
+        "#{user_attr_var}: #{user_attr_var}"
 
       {op, val} when op in [:!=, :>, :>=, :<, :<=, :like, :ilike] ->
         "#{field}: {#{inspect(op)}, #{inspect(val)}}"
