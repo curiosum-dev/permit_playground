@@ -1,12 +1,12 @@
-defmodule PermitPlayground.RBAC.PermissionContext do
+defmodule PermitPlayground.Authorization.PermissionContext do
   @moduledoc false
   use Contexted.CRUD,
     repo: PermitPlayground.Repo,
-    schema: PermitPlayground.RBAC.Permission
+    schema: PermitPlayground.Authorization.Permission
 
-  alias PermitPlayground.RBAC
+  alias PermitPlayground.Authorization
   alias PermitPlayground.Repo
-  alias PermitPlayground.RBAC.Permission
+  alias PermitPlayground.Authorization.Permission
 
   @spec get_permission_by_role_action_resource(integer(), integer(), integer()) ::
           Ecto.Schema.t() | nil
@@ -18,24 +18,41 @@ defmodule PermitPlayground.RBAC.PermissionContext do
     )
   end
 
-  @spec get_permission_matrix() :: map()
-  def get_permission_matrix do
-    roles = RBAC.list_roles()
-    actions = RBAC.list_actions()
-    resources = RBAC.list_resources([:resource_attributes])
-    permissions = RBAC.list_permissions()
+  @spec get_permission_by_user_attribute_action_resource(integer(), integer(), integer()) ::
+          Ecto.Schema.t() | nil
+  def get_permission_by_user_attribute_action_resource(user_attribute_id, action_id, resource_id) do
+    Repo.get_by(Permission,
+      user_attribute_id: user_attribute_id,
+      action_id: action_id,
+      resource_id: resource_id
+    )
+  end
+
+  @spec get_permission_matrix(:role | :attribute) :: map()
+  def get_permission_matrix(type \\ :role) when type in [:role, :attribute] do
+    roles = Authorization.list_roles()
+    actions = Authorization.list_actions()
+    user_attributes = Authorization.list_user_attributes()
+    resources = Authorization.list_resources([:resource_attributes])
+    permissions = Authorization.list_permissions()
 
     permission_map =
       permissions
       |> Enum.into(%{}, fn p ->
-        {{p.role_id, p.action_id, p.resource_id}, p}
+        if p.role_id do
+          {{p.role_id, p.action_id, p.resource_id}, p}
+        else
+          {{p.user_attribute_id, p.action_id, p.resource_id}, p}
+        end
       end)
 
     %{
       roles: roles,
       actions: actions,
+      user_attributes: user_attributes,
       resources: resources,
-      permissions: permission_map
+      permissions: permission_map,
+      type: type
     }
   end
 

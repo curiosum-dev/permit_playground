@@ -1,10 +1,10 @@
-defmodule PermitPlayground.RBAC.ResourceAttribute do
+defmodule PermitPlayground.Authorization.ResourceAttribute do
   @moduledoc false
   use Ecto.Schema
 
   import Ecto.Changeset
 
-  alias PermitPlayground.RBAC.Resource
+  alias PermitPlayground.Authorization.Resource
 
   schema "resource_attributes" do
     field :name, :string

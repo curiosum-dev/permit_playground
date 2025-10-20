@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gray-50">
     <div class="mx-auto px-4 sm:px-6 lg:px-8">
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">RBAC</h1>
-        <p class="mt-2 text-gray-600">Configure role-based access control permissions</p>
+        <h1 class="text-3xl font-bold text-gray-900">ABAC</h1>
+        <p class="mt-2 text-gray-600">Configure attribute-based access control permissions</p>
       </div>
 
       <div class="flex flex-col gap-8">
@@ -17,6 +17,7 @@
       permission_context={@selected_permission_context}
       selected_conditions={@selected_conditions}
       can_function_preview={@can_function_preview}
+      include_user_attr?={@include_user_attr?}
     />
   </div>
 </Layouts.app>

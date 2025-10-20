@@ -1,4 +1,4 @@
-defmodule PermitPlayground.RBAC.Role do
+defmodule PermitPlayground.Authorization.Role do
   @moduledoc false
   use Ecto.Schema
 

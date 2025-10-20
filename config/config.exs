@@ -25,7 +25,7 @@ config :permit_playground, PermitPlaygroundWeb.Endpoint,
 # Contexted
 config :contexted,
   contexts: [
-    PermitPlayground.RBAC
+    PermitPlayground.Authorization
   ]
 
 # Configures the mailer
