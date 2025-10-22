@@ -23,6 +23,7 @@ defmodule PermitPlaygroundWeb.Router do
     live "/relationships", RelationshipsLive, :index
     live "/rbac", RBACLive, :index
     live "/abac", ABACLive, :index
+    live "/rebac", REBACLive, :index
   end
 
   # Other scopes may use custom stacks.

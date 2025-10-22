@@ -268,11 +268,21 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
           <.entity_permissions_table entity={role} matrix={@matrix} entity_type={:role} />
         <% end %>
       <% else %>
-        <%= for user_attribute <- @matrix.user_attributes do %>
+        <%= if @matrix.type == :attribute do %>
+          <%= for user_attribute <- @matrix.user_attributes do %>
+            <.entity_permissions_table
+              entity={user_attribute}
+              matrix={@matrix}
+              entity_type={:attribute}
+            />
+          <% end %>
+        <% else %>
           <.entity_permissions_table
-            entity={user_attribute}
+            :if={Enum.at(@matrix.relationships, 0)}
+            entity={Enum.at(@matrix.relationships, 0)}
             matrix={@matrix}
-            entity_type={:attribute}
+            entity_type={:relationship}
+            show_header={false}
           />
         <% end %>
       <% end %>
@@ -281,24 +291,36 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   end
 
   @doc """
-  Renders a permissions table for a single entity (role or user attribute).
+  Renders a permissions table for a single entity (role, user attribute, or relationship).
   """
   attr :entity, :map, required: true
   attr :matrix, :map, required: true
   attr :entity_type, :atom, required: true
+  attr :show_header, :boolean, default: true
 
   def entity_permissions_table(assigns) do
     assigns =
       assign(
         assigns,
         :title,
-        if(assigns.entity_type == :role, do: "Role", else: "User attribute")
+        case assigns.entity_type do
+          :role -> "Role"
+          :attribute -> "User attribute"
+          :relationship -> "Relationship"
+        end
       )
 
     ~H"""
     <div class="border border-gray-200 rounded-lg p-4">
-      <h3 class="text-md font-semibold text-gray-800 mb-4">
-        {@title}: <span class="text-blue-600">{":" <> @entity.name}</span>
+      <h3 :if={@show_header} class="text-md font-semibold text-gray-800 mb-4">
+        <%= if @entity_type == :relationship do %>
+          {@title}: <span class="text-blue-600">{@entity.name}</span>
+          <span class="text-sm text-gray-500 ml-2">
+            ({@entity.first_object} → {@entity.second_object})
+          </span>
+        <% else %>
+          {@title}: <span class="text-blue-600">{":" <> @entity.name}</span>
+        <% end %>
       </h3>
 
       <div class="overflow-x-auto">
@@ -344,8 +366,12 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   @doc """
   Renders a permission toggle button with condition indicator.
   """
-  attr :entity_type, :atom, required: true, doc: "Either :role or :attribute"
-  attr :entity_id, :integer, required: true, doc: "ID of the role or user attribute"
+  attr :entity_type, :atom, required: true, doc: "Either :role, :attribute, or :relationship"
+
+  attr :entity_id, :integer,
+    required: true,
+    doc: "ID of the role, user attribute, or relationship"
+
   attr :action_id, :integer, required: true
   attr :resource_id, :integer, required: true
   attr :matrix, :map, required: true
@@ -363,9 +389,12 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     ~H"""
     <div class="relative inline-block">
       <button
-        phx-click="toggle_permission"
+        phx-click={
+          if @entity_type == :relationship, do: "toggle_rebac_permission", else: "toggle_permission"
+        }
         phx-value-role_id={if @entity_type == :role, do: @entity_id}
         phx-value-user_attribute_id={if @entity_type == :attribute, do: @entity_id}
+        phx-value-relationship_id={if @entity_type == :relationship, do: @entity_id}
         phx-value-action_id={@action_id}
         phx-value-resource_id={@resource_id}
         class={[
@@ -422,28 +451,11 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
           <.permission_context_badge permission_context={@permission_context} />
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
-              <div :if={Map.has_key?(@permission_context, :user_attribute)} class="mb-6">
-                <label class="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border">
-                  <input
-                    type="checkbox"
-                    checked={@include_user_attr?}
-                    phx-click="toggle_include_user_attr"
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span class="text-sm text-gray-700">Use pattern matched attr in rule</span>
-                </label>
-              </div>
-
-              <div :if={@permission_context.resource.resource_attributes != []} class="mb-6">
-                <.condition_help_text />
-                <.condition_attributes_list
-                  attributes={@permission_context.resource.resource_attributes}
-                  selected_conditions={@selected_conditions}
-                />
-              </div>
-            </div>
-
+            <.permission_modal_sidebar
+              permission_context={@permission_context}
+              include_user_attr?={@include_user_attr?}
+              selected_conditions={@selected_conditions}
+            />
             <div class="lg:col-span-2">
               <.can_function_preview can_function_preview={@can_function_preview} />
             </div>
@@ -465,21 +477,123 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     ~H"""
     <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
       <div class="flex items-center justify-center gap-2 text-sm">
-        <span class="px-3 py-1 bg-white rounded-full font-medium text-blue-600">
-          {":" <>
-            if Map.has_key?(@permission_context, :role),
-              do: @permission_context.role.name,
-              else: @permission_context.user_attribute.name}
-        </span>
-        <span class="text-gray-400">→</span>
-        <span class="px-3 py-1 bg-white rounded-full font-medium text-green-600">
-          {":" <> @permission_context.action.name}
-        </span>
-        <span class="text-gray-400">→</span>
-        <span class="px-3 py-1 bg-white rounded-full font-medium text-purple-600">
-          {@permission_context.resource.name}
-        </span>
+        <.permission_badge_items permission_context={@permission_context} />
       </div>
+    </div>
+    """
+  end
+
+  defp permission_badge_items(assigns) do
+    ~H"""
+    <%= if Map.has_key?(@permission_context, :relationship) do %>
+      <.rebac_badge_items permission_context={@permission_context} />
+    <% else %>
+      <.standard_badge_items permission_context={@permission_context} />
+    <% end %>
+    """
+  end
+
+  defp rebac_badge_items(assigns) do
+    ~H"""
+    <span class="px-3 py-1 bg-white rounded-full font-medium text-green-600">
+      {":" <> to_string(@permission_context.action.name)}
+    </span>
+    <span class="text-gray-400">→</span>
+    <span class="px-3 py-1 bg-white rounded-full font-medium text-blue-600">
+      {to_string(@permission_context.resource.name)}
+    </span>
+    """
+  end
+
+  defp standard_badge_items(assigns) do
+    ~H"""
+    <span class="px-3 py-1 bg-white rounded-full font-medium text-blue-600">
+      {":" <> get_entity_name(@permission_context)}
+    </span>
+    <span class="text-gray-400">→</span>
+    <span class="px-3 py-1 bg-white rounded-full font-medium text-green-600">
+      {":" <> to_string(@permission_context.action.name)}
+    </span>
+    <span class="text-gray-400">→</span>
+    <span class="px-3 py-1 bg-white rounded-full font-medium text-purple-600">
+      {to_string(@permission_context.resource.name)}
+    </span>
+    """
+  end
+
+  defp get_entity_name(permission_context) do
+    cond do
+      Map.has_key?(permission_context, :role) ->
+        to_string(permission_context.role.name)
+
+      Map.has_key?(permission_context, :user_attribute) ->
+        to_string(permission_context.user_attribute.name)
+
+      true ->
+        "unknown"
+    end
+  end
+
+  @doc """
+  Renders the left sidebar of the permission modal with conditions and options.
+  """
+  attr :permission_context, :any, required: true
+  attr :include_user_attr?, :boolean, required: true
+  attr :selected_conditions, :map, required: true
+
+  def permission_modal_sidebar(assigns) do
+    ~H"""
+    <div class="lg:col-span-1">
+      <.user_attribute_checkbox
+        permission_context={@permission_context}
+        include_user_attr?={@include_user_attr?}
+      />
+      <.conditions_section
+        permission_context={@permission_context}
+        selected_conditions={@selected_conditions}
+      />
+    </div>
+    """
+  end
+
+  defp user_attribute_checkbox(assigns) do
+    ~H"""
+    <div :if={Map.has_key?(@permission_context, :user_attribute)} class="mb-6">
+      <label class="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border">
+        <input
+          type="checkbox"
+          checked={@include_user_attr?}
+          phx-click="toggle_include_user_attr"
+          class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <span class="text-sm text-gray-700">Use pattern matched attr in rule</span>
+      </label>
+    </div>
+    """
+  end
+
+  defp conditions_section(assigns) do
+    ~H"""
+    <div class="mb-6">
+      <.condition_help_text />
+      <%= if @permission_context.resource.resource_attributes == [] do %>
+        <.no_attributes_message />
+      <% else %>
+        <.condition_attributes_list
+          attributes={@permission_context.resource.resource_attributes}
+          selected_conditions={@selected_conditions}
+        />
+      <% end %>
+    </div>
+    """
+  end
+
+  defp no_attributes_message(assigns) do
+    ~H"""
+    <div class="text-xs text-gray-500 bg-gray-50 border border-dashed border-gray-300 rounded-md p-3">
+      This resource has no attributes yet. You can still add a permission,
+      but there are no resource conditions available. Add attributes to the
+      resource to enable conditions.
     </div>
     """
   end
@@ -640,6 +754,10 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
       :management ->
         Enum.empty?(matrix.roles) or Enum.empty?(matrix.user_attributes) or
           Enum.empty?(matrix.actions) or Enum.empty?(matrix.resources)
+
+      _ ->
+        Enum.empty?(matrix.relationships) or Enum.empty?(matrix.actions) or
+          Enum.empty?(matrix.resources)
     end
   end
 

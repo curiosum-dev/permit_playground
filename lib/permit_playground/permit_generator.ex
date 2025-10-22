@@ -5,23 +5,22 @@ defmodule PermitPlayground.PermitGenerator do
 
   alias PermitPlayground.ConditionParser
 
-  def generate_can_preview(role, action, resource, conditions \\ %{}, opts \\ %{}) do
-    is_abac? = Map.has_key?(opts, :include_user_attr?)
+  def generate_can_preview(type, role, action, resource, conditions \\ %{}, opts \\ %{}) do
     action_name = String.to_atom(action.name)
     resource_name = resource.name
     parsed_conditions = ConditionParser.parse_conditions(conditions)
 
-    all_conditions = build_conditions(parsed_conditions, role, opts, is_abac?)
-    function_head = build_function_head(role, is_abac?)
+    all_conditions = build_conditions(parsed_conditions, role, opts, type)
+    function_head = build_function_head(role, type)
 
     permission_call =
-      build_permission_call(action_name, resource_name, all_conditions, role, is_abac?)
+      build_permission_call(action_name, resource_name, all_conditions, role, type)
 
     build_complete_function(function_head, permission_call)
   end
 
-  defp build_conditions(parsed_conditions, role, opts, is_abac?) do
-    if is_abac? and Map.get(opts, :include_user_attr?, true) do
+  defp build_conditions(parsed_conditions, role, opts, type) do
+    if type == :abac and Map.get(opts, :include_user_attr?, true) do
       user_attr_var = "user_#{role.name}"
       user_attr_key = String.to_atom(role.name)
       Map.put(parsed_conditions, user_attr_key, user_attr_var)
@@ -30,20 +29,25 @@ defmodule PermitPlayground.PermitGenerator do
     end
   end
 
-  defp build_function_head(role, is_abac?) do
-    if is_abac? do
-      user_attr_var = "user_#{role.name}"
-      "def can(%User{#{role.name}: #{user_attr_var}} = user) do"
-    else
-      "def can(%{role: :#{role.name}} = user) do"
+  defp build_function_head(role, type) do
+    case type do
+      :abac ->
+        user_attr_var = "user_#{role.name}"
+        "def can(%User{#{role.name}: #{user_attr_var}} = user) do"
+
+      :rbac ->
+        "def can(%{role: :#{role.name}} = user) do"
+
+      _ ->
+        "def can(user) do"
     end
   end
 
-  defp build_permission_call(action_name, resource_name, all_conditions, role, is_abac?) do
+  defp build_permission_call(action_name, resource_name, all_conditions, role, type) do
     if map_size(all_conditions) == 0 do
       "    |> #{action_name}(#{resource_name})"
     else
-      condition_pairs = format_conditions(all_conditions, role, is_abac?)
+      condition_pairs = format_conditions(all_conditions, role, type)
       "    |> #{action_name}(#{resource_name}, #{condition_pairs})"
     end
   end
@@ -57,8 +61,8 @@ defmodule PermitPlayground.PermitGenerator do
     """
   end
 
-  defp format_conditions(conditions, role, is_abac?) do
-    if is_abac? do
+  defp format_conditions(conditions, role, type) do
+    if type == :abac do
       user_attr_var = "user_#{role.name}"
 
       {user_attr_pair, other_pairs} =

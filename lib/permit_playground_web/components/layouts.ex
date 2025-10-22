@@ -57,12 +57,10 @@ defmodule PermitPlaygroundWeb.Layouts do
             <a href={~p"/abac"} class="btn btn-ghost">ABAC</a>
           </li>
           <li>
-            <.theme_toggle />
+            <a href={~p"/rebac"} class="btn btn-ghost">ReBAC</a>
           </li>
           <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
+            <.theme_toggle />
           </li>
         </ul>
       </div>

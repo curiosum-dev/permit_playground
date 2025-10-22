@@ -28,11 +28,18 @@ defmodule PermitPlayground.Authorization.PermissionContext do
     )
   end
 
+  @spec get_permission_matrix() :: map()
+  def get_permission_matrix(), do: build_permission_matrix(nil)
+
   @spec get_permission_matrix(:role | :attribute) :: map()
-  def get_permission_matrix(type \\ :role) when type in [:role, :attribute] do
+  def get_permission_matrix(type) when type in [:role, :attribute],
+    do: build_permission_matrix(type)
+
+  defp build_permission_matrix(type) do
     roles = Authorization.list_roles()
     actions = Authorization.list_actions()
     user_attributes = Authorization.list_user_attributes()
+    relationships = Authorization.list_relationships()
     resources = Authorization.list_resources([:resource_attributes])
     permissions = Authorization.list_permissions()
 
@@ -46,14 +53,21 @@ defmodule PermitPlayground.Authorization.PermissionContext do
         end
       end)
 
-    %{
+    base = %{
       roles: roles,
       actions: actions,
       user_attributes: user_attributes,
+      relationships: relationships,
       resources: resources,
       permissions: permission_map,
       type: type
     }
+
+    case type do
+      :role -> base
+      :attribute -> base
+      _ -> Map.put(base, :permissions, %{})
+    end
   end
 
   @spec toggle_permission(integer(), integer(), integer(), map()) ::
