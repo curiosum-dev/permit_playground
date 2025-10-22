@@ -20,6 +20,7 @@ defmodule PermitPlaygroundWeb.Router do
     get "/", PageController, :home
 
     live "/resources", ManageResourcesLive, :index
+    live "/relationships", RelationshipsLive, :index
     live "/rbac", RBACLive, :index
     live "/abac", ABACLive, :index
   end

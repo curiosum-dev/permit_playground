@@ -1,0 +1,36 @@
+<Layouts.app flash={@flash}>
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Relationships</h1>
+      <button
+        phx-click="show_add_relationship_modal"
+        class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
+      >
+        <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Add
+      </button>
+    </div>
+
+    <.relationships_table relationships={@relationships} />
+
+    <.modal
+      show={@active_modal == :add_relationship}
+      title="Add New Relationship"
+      form={@relationship_form}
+      submit_event="add_relationship"
+      cancel_event="close_modal"
+    >
+      <.relationship_form_fields form={@relationship_form} />
+    </.modal>
+
+    <.modal
+      show={@active_modal == :edit_relationship}
+      title="Edit Relationship"
+      form={@relationship_form}
+      submit_event="update_relationship"
+      cancel_event="close_modal"
+    >
+      <input type="hidden" name="relationship_id" value={@editing_relationship.id} />
+      <.relationship_form_fields form={@relationship_form} />
+    </.modal>
+  </div>
+</Layouts.app>

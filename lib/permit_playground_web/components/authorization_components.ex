@@ -689,4 +689,103 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
     </div>
     """
   end
+
+  @doc """
+  Renders the relationships table with actions.
+  """
+  attr :relationships, :list, required: true
+
+  def relationships_table(assigns) do
+    ~H"""
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <.table id="relationships-table" rows={@relationships}>
+          <:col :let={relationship} label="Name">
+            <div class="text-sm font-medium text-gray-900">
+              {relationship.name}
+            </div>
+          </:col>
+          <:col :let={relationship} label="First Object">
+            <div class="text-sm text-gray-900">
+              {relationship.first_object}
+            </div>
+          </:col>
+          <:col :let={relationship} label="Second Object">
+            <div class="text-sm text-gray-900">
+              {relationship.second_object}
+            </div>
+          </:col>
+          <:action :let={relationship}>
+            <button
+              phx-click="show_edit_relationship_modal"
+              phx-value-relationship_id={relationship.id}
+              class="text-gray-600 hover:text-gray-800 cursor-pointer"
+              title="Edit"
+            >
+              <.icon name="hero-pencil-square" class="w-4 h-4" />
+            </button>
+            <button
+              phx-click="remove_relationship"
+              phx-value-relationship_id={relationship.id}
+              data-confirm="Are you sure you want to delete this relationship?"
+              class="text-red-600 hover:text-red-800 cursor-pointer"
+              title="Delete"
+            >
+              <.icon name="hero-trash" class="w-4 h-4" />
+            </button>
+          </:action>
+        </.table>
+
+        <div :if={@relationships == []} class="text-center py-12">
+          <div class="text-gray-500 text-lg mb-2">No relationships defined yet</div>
+          <div class="text-gray-400">
+            Create your first relationship to get started with ReBAC
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the shared form fields for relationship create/edit.
+  """
+  attr :form, :any, required: true
+
+  def relationship_form_fields(assigns) do
+    ~H"""
+    <div class="space-y-4">
+      <div>
+        <.input
+          field={@form[:name]}
+          type="select"
+          label="Relationship Name"
+          options={[
+            {"Ownership", "ownership"},
+            {"Superiority", "superiority"},
+            {"Followup", "followup"}
+          ]}
+        />
+      </div>
+
+      <div>
+        <.input
+          field={@form[:first_object]}
+          type="text"
+          label="First Object"
+          placeholder="e.g., user_id"
+        />
+      </div>
+
+      <div>
+        <.input
+          field={@form[:second_object]}
+          type="text"
+          label="Second Object"
+          placeholder="e.g., article_id"
+        />
+      </div>
+    </div>
+    """
+  end
 end

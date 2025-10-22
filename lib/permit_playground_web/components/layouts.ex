@@ -48,6 +48,9 @@ defmodule PermitPlaygroundWeb.Layouts do
             <a href={~p"/resources"} class="btn btn-ghost">Manage resources</a>
           </li>
           <li>
+            <a href={~p"/relationships"} class="btn btn-ghost">Relationships</a>
+          </li>
+          <li>
             <a href={~p"/rbac"} class="btn btn-ghost">RBAC</a>
           </li>
           <li>

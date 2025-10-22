@@ -9,4 +9,5 @@ defmodule PermitPlayground.Authorization do
   delegate_all(PermitPlayground.Authorization.ResourceContext)
   delegate_all(PermitPlayground.Authorization.ResourceAttributeContext)
   delegate_all(PermitPlayground.Authorization.UserAttributeContext)
+  delegate_all(PermitPlayground.Authorization.RelationshipContext)
 end

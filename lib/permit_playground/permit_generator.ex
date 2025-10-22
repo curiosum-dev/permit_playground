@@ -60,6 +60,7 @@ defmodule PermitPlayground.PermitGenerator do
   defp format_conditions(conditions, role, is_abac?) do
     if is_abac? do
       user_attr_var = "user_#{role.name}"
+
       {user_attr_pair, other_pairs} =
         Enum.split_with(conditions, fn {_field, val} -> val == user_attr_var end)
 
