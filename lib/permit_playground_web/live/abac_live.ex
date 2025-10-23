@@ -64,6 +64,7 @@ defmodule PermitPlaygroundWeb.ABACLive do
       |> assign(
         :can_function_preview,
         PermitGenerator.generate_can_preview(
+          :abac,
           user_attribute,
           action,
           resource,
@@ -95,6 +96,7 @@ defmodule PermitPlaygroundWeb.ABACLive do
 
     updated_preview =
       PermitGenerator.generate_can_preview(
+        :abac,
         ctx.user_attribute,
         ctx.action,
         ctx.resource,
@@ -123,6 +125,7 @@ defmodule PermitPlaygroundWeb.ABACLive do
 
     updated_preview =
       PermitGenerator.generate_can_preview(
+        :abac,
         ctx.user_attribute,
         ctx.action,
         ctx.resource,
@@ -145,6 +148,7 @@ defmodule PermitPlaygroundWeb.ABACLive do
     updated_preview =
       if ctx do
         PermitGenerator.generate_can_preview(
+          :abac,
           ctx.user_attribute,
           ctx.action,
           ctx.resource,

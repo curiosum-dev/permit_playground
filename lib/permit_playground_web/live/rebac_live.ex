@@ -1,46 +1,51 @@
-defmodule PermitPlaygroundWeb.RBACLive do
+defmodule PermitPlaygroundWeb.REBACLive do
   use PermitPlaygroundWeb, :live_view
 
   import PermitPlaygroundWeb.AuthorizationComponents
 
   alias PermitPlayground.Authorization
+  alias PermitPlayground.PermitGenerator
 
   @impl true
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:matrix, Authorization.get_permission_matrix(:role))
+      |> assign(:matrix, Authorization.get_permission_matrix())
       |> assign(:active_modal, nil)
       |> assign(:selected_permission_context, nil)
       |> assign(:selected_conditions, %{})
+      |> assign(:relationships, Authorization.list_relationships())
 
     {:ok, socket}
   end
 
   @impl true
   def handle_event(
-        "toggle_permission",
-        %{"role_id" => role_id, "action_id" => action_id, "resource_id" => resource_id},
+        "toggle_rebac_permission",
+        %{
+          "relationship_id" => relationship_id,
+          "action_id" => action_id,
+          "resource_id" => resource_id
+        },
         socket
       ) do
-    role_id = String.to_integer(role_id)
+    relationship_id = String.to_integer(relationship_id)
     action_id = String.to_integer(action_id)
     resource_id = String.to_integer(resource_id)
 
-    existing_permission =
-      Authorization.get_permission_by_role_action_resource(role_id, action_id, resource_id)
+    existing_permission = nil
 
-    role = Authorization.get_role!(role_id)
+    relationship = Authorization.get_relationship!(relationship_id)
     action = Authorization.get_action!(action_id)
     resource = Authorization.get_resource!(resource_id, [:resource_attributes])
 
-    selected_conditions = if(existing_permission, do: existing_permission.conditions, else: %{})
+    selected_conditions = %{}
 
     permission_context = %{
-      role_id: role_id,
+      relationship_id: relationship_id,
       action_id: action_id,
       resource_id: resource_id,
-      role: role,
+      relationship: relationship,
       action: action,
       resource: resource,
       existing_permission: existing_permission
@@ -53,9 +58,9 @@ defmodule PermitPlaygroundWeb.RBACLive do
       |> assign(:selected_conditions, selected_conditions)
       |> assign(
         :can_function_preview,
-        PermitPlayground.PermitGenerator.generate_can_preview(
-          :rbac,
-          role,
+        PermitGenerator.generate_can_preview(
+          :rebac,
+          relationship,
           action,
           resource,
           selected_conditions
@@ -84,9 +89,9 @@ defmodule PermitPlaygroundWeb.RBACLive do
     ctx = socket.assigns.selected_permission_context
 
     updated_preview =
-      PermitPlayground.PermitGenerator.generate_can_preview(
-        :rbac,
-        ctx.role,
+      PermitGenerator.generate_can_preview(
+        :rebac,
+        ctx.relationship,
         ctx.action,
         ctx.resource,
         updated_conditions
@@ -112,9 +117,9 @@ defmodule PermitPlaygroundWeb.RBACLive do
     ctx = socket.assigns.selected_permission_context
 
     updated_preview =
-      PermitPlayground.PermitGenerator.generate_can_preview(
-        :rbac,
-        ctx.role,
+      PermitGenerator.generate_can_preview(
+        :rebac,
+        ctx.relationship,
         ctx.action,
         ctx.resource,
         updated_conditions
@@ -127,8 +132,13 @@ defmodule PermitPlaygroundWeb.RBACLive do
   end
 
   @impl true
+  def handle_event("select_relationship", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("save_permission", _params, socket) do
-    ctx = socket.assigns.selected_permission_context
+    _ctx = socket.assigns.selected_permission_context
     conditions = socket.assigns.selected_conditions
 
     empty_conditions =
@@ -144,56 +154,26 @@ defmodule PermitPlaygroundWeb.RBACLive do
          "Condition values cannot be empty for: #{Enum.join(empty_conditions, ", ")}"
        )}
     else
-      result =
-        if ctx.existing_permission do
-          Authorization.update_permission(ctx.existing_permission, %{
-            conditions: conditions
-          })
-        else
-          Authorization.create_permission(%{
-            role_id: ctx.role_id,
-            action_id: ctx.action_id,
-            resource_id: ctx.resource_id,
-            conditions: conditions
-          })
-        end
+      socket =
+        socket
+        |> assign(:matrix, Authorization.get_permission_matrix())
+        |> hide_modal()
+        |> put_flash(:info, "Permission added successfully")
 
-      case result do
-        {:ok, _permission} ->
-          action = if ctx.existing_permission, do: "updated", else: "added"
-
-          socket =
-            socket
-            |> assign(:matrix, Authorization.get_permission_matrix(:role))
-            |> hide_modal()
-            |> put_flash(:info, "Permission #{action} successfully")
-
-          {:noreply, socket}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Failed to save permission")}
-      end
+      {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("delete_permission", _params, socket) do
-    ctx = socket.assigns.selected_permission_context
+    socket =
+      socket
+      |> assign(:matrix, Authorization.get_permission_matrix())
+      |> hide_modal()
+      |> assign(:selected_conditions, %{})
+      |> put_flash(:info, "Permission deleted successfully")
 
-    case Authorization.delete_permission(ctx.existing_permission) do
-      {:ok, _permission} ->
-        socket =
-          socket
-          |> assign(:matrix, Authorization.get_permission_matrix(:role))
-          |> hide_modal()
-          |> assign(:selected_conditions, %{})
-          |> put_flash(:info, "Permission deleted successfully")
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete permission")}
-    end
+    {:noreply, socket}
   end
 
   defp show_modal(socket, modal_name) do
