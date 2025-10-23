@@ -436,7 +436,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   attr :permission_context, :any, required: true
   attr :selected_conditions, :map, required: true
   attr :can_function_preview, :string, required: true
-
+  attr :relationships, :list, required: false, default: []
   attr :include_user_attr?, :boolean, default: true
 
   def permission_conditions_modal(assigns) do
@@ -455,6 +455,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
               permission_context={@permission_context}
               include_user_attr?={@include_user_attr?}
               selected_conditions={@selected_conditions}
+              relationships={@relationships}
             />
             <div class="lg:col-span-2">
               <.can_function_preview can_function_preview={@can_function_preview} />
@@ -540,6 +541,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   attr :permission_context, :any, required: true
   attr :include_user_attr?, :boolean, required: true
   attr :selected_conditions, :map, required: true
+  attr :relationships, :list, required: false, default: []
 
   def permission_modal_sidebar(assigns) do
     ~H"""
@@ -548,10 +550,44 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
         permission_context={@permission_context}
         include_user_attr?={@include_user_attr?}
       />
+      <.relation_section
+        permission_context={@permission_context}
+        relationships={@relationships}
+      />
       <.conditions_section
         permission_context={@permission_context}
         selected_conditions={@selected_conditions}
       />
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the relation section for ReBAC permissions.
+  """
+  attr :permission_context, :any, required: true
+  attr :relationships, :list, required: false, default: []
+
+  def relation_section(assigns) do
+    ~H"""
+    <div :if={Map.has_key?(@permission_context, :relationship)} class="mb-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">Apply relationship:</p>
+        <div>
+          <.form for={%{}} phx-change="select_relationship">
+            <select
+              name="value"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              id="relationship-select"
+            >
+              <option value=""></option>
+              <option :for={relationship <- @relationships} value={relationship.id}>
+                {String.capitalize(to_string(relationship.name))} ({relationship.first_object} → {relationship.second_object})
+              </option>
+            </select>
+          </.form>
+        </div>
+      </div>
     </div>
     """
   end
@@ -811,7 +847,7 @@ defmodule PermitPlaygroundWeb.AuthorizationComponents do
   @doc """
   Renders the relationships table with actions.
   """
-  attr :relationships, :list, required: true
+  attr :relationships, :list, required: false, default: []
 
   def relationships_table(assigns) do
     ~H"""

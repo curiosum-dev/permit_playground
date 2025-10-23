@@ -14,6 +14,7 @@ defmodule PermitPlaygroundWeb.REBACLive do
       |> assign(:active_modal, nil)
       |> assign(:selected_permission_context, nil)
       |> assign(:selected_conditions, %{})
+      |> assign(:relationships, Authorization.list_relationships())
 
     {:ok, socket}
   end
@@ -128,6 +129,11 @@ defmodule PermitPlaygroundWeb.REBACLive do
      socket
      |> assign(:selected_conditions, updated_conditions)
      |> assign(:can_function_preview, updated_preview)}
+  end
+
+  @impl true
+  def handle_event("select_relationship", _params, socket) do
+    {:noreply, socket}
   end
 
   @impl true
